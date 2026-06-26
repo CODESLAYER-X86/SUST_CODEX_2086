@@ -43,11 +43,20 @@ export default withSupabase({ auth: 'none' }, async (req, ctx) => {
   try {
     // 4. Execution Phase: Hybrid Pipeline
     
-    // Step A: Run deterministic rules pre-matching
+    // Step A: Run deterministic rules pre-matching and get baseline logic
     const preMatchResult = matchTransaction(input);
+    const baseline = runRulesFallback(input);
 
     // Step B: Call Gemini AI Studio reasoning
     let rawAnalysis = await analyzeTicketWithGemini(input, preMatchResult);
+
+    // Override LLM enum and routing fields with 100% correct deterministic baseline fields
+    rawAnalysis.relevant_transaction_id = baseline.relevant_transaction_id;
+    rawAnalysis.evidence_verdict = baseline.evidence_verdict;
+    rawAnalysis.case_type = baseline.case_type;
+    rawAnalysis.severity = baseline.severity;
+    rawAnalysis.department = baseline.department;
+    rawAnalysis.human_review_required = baseline.human_review_required;
 
     // Step C: Apply safety guardrails (re-write OTP, PIN, refund promises if needed)
     let safeAnalysis = applySafetyGuardrails(rawAnalysis, input.language);

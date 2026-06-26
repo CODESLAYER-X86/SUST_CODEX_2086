@@ -201,13 +201,29 @@ export function runRulesFallback(input: AnalyzeTicketInput): AnalyzeTicketOutput
       humanReviewRequired = true;
       break;
     case 'refund_request':
-      department = 'customer_support';
-      severity = 'low';
+      if (input.user_type === 'merchant') {
+        department = 'merchant_operations';
+        severity = 'medium';
+      } else if (input.user_type === 'agent') {
+        department = 'agent_operations';
+        severity = 'high';
+      } else {
+        department = 'customer_support';
+        severity = 'low';
+      }
       humanReviewRequired = false;
       break;
     default:
-      department = 'customer_support';
-      severity = 'low';
+      if (input.user_type === 'merchant') {
+        department = 'merchant_operations';
+        severity = 'medium';
+      } else if (input.user_type === 'agent') {
+        department = 'agent_operations';
+        severity = 'high';
+      } else {
+        department = 'customer_support';
+        severity = 'low';
+      }
       humanReviewRequired = false;
   }
 

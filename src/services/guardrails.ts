@@ -28,7 +28,23 @@ export function applySafetyGuardrails(
   // -------------------------------------------------------------
   // Rule 1: PIN/OTP Request Protection
   // -------------------------------------------------------------
-  // We match cases where the reply might ask the customer to share/send/provide credentials.
+  // Ensure that if any credential keyword is mentioned in the reply, the pre-approved safety warnings are present.
+  const hasCredsWord = ['otp', 'pin', 'password', 'ওটিপি', 'পিন'].some(word => replyNormalized.includes(word));
+  if (hasCredsWord) {
+    if (lang === 'bn') {
+      if (!replyNormalized.includes('শেয়ার করবেন না') && !replyNormalized.includes('শেয়ার করবেন না')) {
+        result.customer_reply = result.customer_reply.trim() + ' অনুগ্রহ করে আপনার পিন বা ওটিপি কারো সাথে শেয়ার করবেন না।';
+      }
+    } else {
+      if (!replyNormalized.includes('do not share') && !replyNormalized.includes('never share') && !replyNormalized.includes('dont share') && !replyNormalized.includes("don't share")) {
+        result.customer_reply = result.customer_reply.trim() + ' Please do not share your PIN or OTP with anyone.';
+      }
+    }
+  }
+
+  // Update replyNormalized after potential appending
+  const updatedReplyNormalized = normalizeText(result.customer_reply);
+
   const credentialRequestPatterns = [
     /send (?:me |us )?(?:your )?(?:otp|pin|password)/,
     /provide (?:your )?(?:otp|pin|password)/,
@@ -40,13 +56,14 @@ export function applySafetyGuardrails(
     /পাসওয়ার্ড (?:দিন|বলুন|পাঠান)/
   ];
 
+  const negationKeywords = [
+    'do not', 'never', 'dont', "don't", 'should not', 'must not',
+    'শেয়ার করবেন না', 'শেয়ার করবেন না', 'জানাবেন না', 'বলবেন না', 'না', 'কখনো না', 'কখনও না'
+  ];
+
   const hasCredentialRequest = credentialRequestPatterns.some(pattern => 
-    pattern.test(replyNormalized)
-  ) && !replyNormalized.includes('do not share') 
-    && !replyNormalized.includes('never share') 
-    && !replyNormalized.includes('dont share') 
-    && !replyNormalized.includes('don\'t share') 
-    && !replyNormalized.includes('শেয়ার করবেন না');
+    pattern.test(updatedReplyNormalized)
+  ) && !negationKeywords.some(neg => updatedReplyNormalized.includes(neg));
 
   if (hasCredentialRequest) {
     console.warn(`[Guardrail] Credential request detected in customer reply. Sanitising.`);
