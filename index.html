@@ -357,6 +357,81 @@
       background: rgba(99, 102, 241, 0.04);
     }
 
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.75rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Chat Simulation */
+    .chat-simulation {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .chat-bubble.customer {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-bottom-left-radius: 2px;
+      color: var(--text-main);
+    }
+
+    .chat-bubble.agent {
+      align-self: flex-end;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-bottom-right-radius: 2px;
+      color: #e2f8ff;
+    }
+
+    .chat-meta {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .chat-bubble.agent .chat-meta {
+      color: #8be5f2;
+      justify-content: flex-end;
+    }
+
     .audit-grid {
       display: flex;
       gap: 0.75rem;
@@ -506,6 +581,7 @@
           </div>
 
           <button type="submit" class="btn-submit" id="btn-submit-text">Run Investigation</button>
+          <button type="button" class="btn-secondary" id="btn-generate-scenario">✨ Generate Mock Scenario</button>
         </form>
       </div>
 
@@ -568,9 +644,18 @@
             <div class="text-content" id="res-action">-</div>
           </div>
 
-          <div class="text-panel text-reply">
-            <div class="text-title">Draft Customer Reply</div>
-            <div class="text-content" id="res-reply">-</div>
+          <div class="text-panel">
+            <div class="text-title">Live Chat Preview</div>
+            <div class="chat-simulation">
+              <div class="chat-bubble customer">
+                <div class="chat-meta">👤 Customer</div>
+                <div id="chat-customer-text">-</div>
+              </div>
+              <div class="chat-bubble agent">
+                <div class="chat-meta">🤖 Support Copilot (Draft)</div>
+                <div id="chat-agent-text">-</div>
+              </div>
+            </div>
           </div>
 
           <!-- Raw JSON Drawer -->
@@ -709,6 +794,100 @@
     // Initialize default empty transaction history
     document.getElementById('transaction_history').value = "[]";
 
+    const scenarioTemplates = [
+      {
+        label: "Wrong Transfer (Consistent)",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        generate: () => {
+          const amt = [1000, 2500, 5000, 8000][Math.floor(Math.random() * 4)];
+          const phone = "+8801" + Math.floor(100000000 + Math.random() * 900000000);
+          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
+          return {
+            complaint: `I sent ${amt} BDT to a wrong number yesterday. It was supposed to go to my mother but I made a mistake typing the digits. The recipient is unresponsive. Transaction ID is ${txn}.`,
+            history: [
+              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 20).toISOString(), type: "transfer", amount: amt, counterparty: phone, status: "completed" },
+              { transaction_id: "TXN-" + Math.floor(1000 + Math.random() * 9000), timestamp: new Date(Date.now() - 3600000 * 50).toISOString(), type: "cash_in", amount: amt * 2, counterparty: "AGENT-911", status: "completed" }
+            ]
+          };
+        }
+      },
+      {
+        label: "Failed Payment (Consistent)",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        generate: () => {
+          const amt = [500, 1200, 3000][Math.floor(Math.random() * 3)];
+          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
+          return {
+            complaint: `I tried to recharge my mobile with ${amt} taka, but the transaction failed. However, my wallet balance was deducted. Please refund my money.`,
+            history: [
+              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), type: "payment", amount: amt, counterparty: "MERCHANT-MOBILE-RECHARGE", status: "failed" }
+            ]
+          };
+        }
+      },
+      {
+        label: "Phishing Attempt (Safety Check)",
+        language: "en",
+        channel: "call_center",
+        user_type: "customer",
+        generate: () => {
+          const phone = "+8801" + Math.floor(100000000 + Math.random() * 900000000);
+          return {
+            complaint: `Someone called me from ${phone} claiming to be from support and asked for my PIN and OTP to unblock my account. I did not share it yet, but is it safe?`,
+            history: []
+          };
+        }
+      },
+      {
+        label: "Bangla Agent Cash-In (Consistent)",
+        language: "bn",
+        channel: "call_center",
+        user_type: "customer",
+        generate: () => {
+          const amt = [1000, 2000, 5000][Math.floor(Math.random() * 3)];
+          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
+          return {
+            complaint: `আমি আজ সকালে এজেন্টের কাছে ${amt} টাকা ক্যাশ ইন করেছি কিন্তু আমার অ্যাকাউন্টে ব্যালেন্স যোগ হয়নি। এজেন্টের নাম জানি না, ট্রানজেকশন আইডি ${txn}।`,
+            history: [
+              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 4).toISOString(), type: "cash_in", amount: amt, counterparty: "AGENT-" + Math.floor(100 + Math.random() * 900), status: "pending" }
+            ]
+          };
+        }
+      },
+      {
+        label: "Merchant Settlement Delay",
+        language: "en",
+        channel: "merchant_portal",
+        user_type: "merchant",
+        generate: () => {
+          const amt = [12000, 15000, 35000][Math.floor(Math.random() * 3)];
+          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
+          return {
+            complaint: `Yesterday's sales settlement of ${amt} BDT is still pending. Settlement should have completed by 11 AM today. Please resolve this.`,
+            history: [
+              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 18).toISOString(), type: "settlement", amount: amt, counterparty: "MERCHANT-SELF", status: "pending" }
+            ]
+          };
+        }
+      }
+    ];
+
+    document.getElementById('btn-generate-scenario').onclick = () => {
+      const template = scenarioTemplates[Math.floor(Math.random() * scenarioTemplates.length)];
+      const scenario = template.generate();
+      
+      document.getElementById('ticket_id').value = "TKT-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('complaint').value = scenario.complaint;
+      document.getElementById('language').value = template.language;
+      document.getElementById('channel').value = template.channel;
+      document.getElementById('user_type').value = template.user_type;
+      document.getElementById('transaction_history').value = JSON.stringify(scenario.history, null, 2);
+    };
+
     // Handle Form Submit
     document.getElementById('investigator-form').onsubmit = async (e) => {
       e.preventDefault();
@@ -802,7 +981,8 @@
       document.getElementById('res-confidence').innerText = data.confidence ? `${(data.confidence * 100).toFixed(0)}%` : '80%';
       document.getElementById('res-summary').innerText = data.agent_summary;
       document.getElementById('res-action').innerText = data.recommended_next_action;
-      document.getElementById('res-reply').innerText = data.customer_reply;
+      document.getElementById('chat-customer-text').innerText = document.getElementById('complaint').value;
+      document.getElementById('chat-agent-text').innerText = data.customer_reply;
 
       // 4. Set Raw JSON
       document.getElementById('json-raw-content').innerText = JSON.stringify(data, null, 2);
