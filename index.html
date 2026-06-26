@@ -632,6 +632,17 @@
         ]
       },
       {
+        id: "SAMPLE-04",
+        label: "Refund Request",
+        complaint: "I paid 500 to a merchant for a product but I changed my mind and don't want it anymore. Please refund my 500 taka.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9401", timestamp: "2026-04-14T13:00:00Z", type: "payment", amount: 500, counterparty: "MERCHANT-7821", status: "completed" }
+        ]
+      },
+      {
         id: "SAMPLE-05",
         label: "Phishing Report",
         complaint: "Someone called me saying they are from bKash and asked for my OTP. They said my account will be blocked if I don't share it. Is this real? I haven't shared anything yet.",
@@ -639,6 +650,18 @@
         channel: "call_center",
         user_type: "customer",
         history: []
+      },
+      {
+        id: "SAMPLE-06",
+        label: "Vague Complaint",
+        complaint: "Something is wrong with my money. Please check.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9601", timestamp: "2026-04-13T10:00:00Z", type: "cash_in", amount: 3000, counterparty: "AGENT-220", status: "completed" },
+          { transaction_id: "TXN-9602", timestamp: "2026-04-12T15:30:00Z", type: "transfer", amount: 800, counterparty: "+8801911223344", status: "completed" }
+        ]
       },
       {
         id: "SAMPLE-07",
@@ -664,6 +687,17 @@
           { transaction_id: "TXN-9803", timestamp: "2026-04-13T20:10:00Z", type: "transfer", amount: 1000, counterparty: "+8801712001122", status: "failed" }
         ]
       },
+        {
+          id: "SAMPLE-09",
+          label: "Merchant Settlement",
+          complaint: "I am a merchant. My yesterday's sales of 15000 taka have not been settled to my account. Settlement usually happens by 11am next day. Please check.",
+          language: "en",
+          channel: "merchant_portal",
+          user_type: "merchant",
+          history: [
+            { transaction_id: "TXN-9901", timestamp: "2026-04-13T18:00:00Z", type: "settlement", amount: 15000, counterparty: "MERCHANT-SELF", status: "pending" }
+          ]
+        },
       {
         id: "SAMPLE-10",
         label: "Duplicate Bill Payment",
