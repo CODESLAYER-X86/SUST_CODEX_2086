@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueueStorm Investigator — MFS SupportOps Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090b11;
+      --panel-bg: rgba(17, 22, 34, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(6, 182, 212, 0.12) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .logo-container h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(to right, var(--text-main), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+    }
+
+    .logo-container p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .badge-carnival {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    /* Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panel Card Styles */
+    .panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    /* Case selectors */
+    .case-selector-container {
+      margin-bottom: 1.5rem;
+    }
+    
+    .case-selector-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .case-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .case-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .case-btn:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--accent-indigo);
+    }
+
+    .case-btn.active {
+      background: var(--accent-indigo);
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.75rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .mono-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      border: none;
+      color: #fff;
+      padding: 0.85rem;
+      width: 100%;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    /* Result Panel Styles */
+    .result-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 350px;
+      color: var(--text-muted);
+      border: 2px dashed rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+    }
+
+    .result-placeholder svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+
+    .result-container {
+      display: none;
+    }
+
+    .result-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-consistent {
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-inconsistent {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fde047;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-insufficient {
+      background: rgba(99, 102, 241, 0.12);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-critical {
+      background: rgba(244, 63, 94, 0.12);
+      color: #fca5a5;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .badge-high {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fde047;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-medium {
+      background: rgba(99, 102, 241, 0.12);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-low {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Result Grid Blocks */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .meta-block {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+
+    .meta-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .text-panel {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .text-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .text-content {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .text-reply {
+      font-size: 1rem;
+      color: #fff;
+      border-left: 3px solid var(--accent-indigo);
+      background: rgba(99, 102, 241, 0.04);
+    }
+
+    .audit-grid {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .audit-card {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .audit-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .audit-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .audit-val.success {
+      color: var(--accent-emerald);
+    }
+
+    .audit-val.warning {
+      color: var(--accent-amber);
+    }
+
+    /* JSON Drawer */
+    .json-drawer {
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+    }
+
+    .json-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    .json-title:hover {
+      color: #fff;
+    }
+
+    .json-code {
+      display: none;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #34d399;
+      margin-top: 0.75rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <h1>QueueStorm Investigator</h1>
+        <p>SupportOps Copilot for Mobile Financial Services (MFS)</p>
+      </div>
+      <div class="badge-carnival">SUST CSE CARNIVAL 2026</div>
+    </header>
+
+    <div class="case-selector-container">
+      <div class="case-selector-title">Load Worked Case Pack (Local Samples)</div>
+      <div class="case-buttons" id="case-buttons-list">
+        <!-- Buttons added dynamically by script -->
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Input Form Panel -->
+      <div class="panel">
+        <div class="panel-title">Ticket details</div>
+        
+        <form id="investigator-form">
+          <div class="form-group">
+            <label for="ticket_id">Ticket ID</label>
+            <input type="text" id="ticket_id" required value="TKT-001">
+          </div>
+
+          <div class="form-group">
+            <label for="complaint">Complaint Text</label>
+            <textarea id="complaint" rows="4" required placeholder="Type customer complaint here..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="language">Language</label>
+              <select id="language">
+                <option value="en">English (en)</option>
+                <option value="bn">Bengali (bn)</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="channel">Channel</label>
+              <select id="channel">
+                <option value="in_app_chat">In-App Chat</option>
+                <option value="call_center">Call Center</option>
+                <option value="email">Email</option>
+                <option value="merchant_portal">Merchant Portal</option>
+                <option value="field_agent">Field Agent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="user_type">User Type</label>
+              <select id="user_type">
+                <option value="customer">Customer</option>
+                <option value="merchant">Merchant</option>
+                <option value="agent">Agent</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="transaction_history">Transaction History (JSON)</label>
+            <textarea id="transaction_history" rows="6" class="mono-input" placeholder="[ { 'transaction_id': 'TXN-9101', ... } ]"></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btn-submit-text">Run Investigation</button>
+        </form>
+      </div>
+
+      <!-- Result Panel -->
+      <div class="panel">
+        <div class="panel-title">Copilot verdict</div>
+        
+        <!-- Placeholder -->
+        <div class="result-placeholder" id="placeholder-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" />
+          </svg>
+          <p>Submit a ticket on the left to review the investigator logic.</p>
+        </div>
+
+        <!-- Actual Results Dashboard -->
+        <div class="result-container" id="results-box">
+          <div class="result-card-header">
+            <div id="verdict-badge-container">
+              <!-- Verdict badge -->
+            </div>
+            <div id="review-badge-container">
+              <!-- Review badge -->
+            </div>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-block">
+              <label>Matched Transaction ID</label>
+              <div class="meta-val" id="res-transaction-id">-</div>
+            </div>
+            <div class="meta-block">
+              <label>Routed Department</label>
+              <div class="meta-val" id="res-department">-</div>
+            </div>
+          </div>
+
+          <div class="audit-grid">
+            <div class="audit-card">
+              <div class="audit-title">Case Type</div>
+              <div class="audit-val" id="res-casetype">-</div>
+            </div>
+            <div class="audit-card">
+              <div class="audit-title">Severity</div>
+              <div class="audit-val" id="res-severity">-</div>
+            </div>
+            <div class="audit-card">
+              <div class="audit-title">Confidence</div>
+              <div class="audit-val" id="res-confidence">-</div>
+            </div>
+          </div>
+
+          <div class="text-panel">
+            <div class="text-title">Agent Summary</div>
+            <div class="text-content" id="res-summary">-</div>
+          </div>
+
+          <div class="text-panel">
+            <div class="text-title">Recommended Next Action</div>
+            <div class="text-content" id="res-action">-</div>
+          </div>
+
+          <div class="text-panel text-reply">
+            <div class="text-title">Draft Customer Reply</div>
+            <div class="text-content" id="res-reply">-</div>
+          </div>
+
+          <!-- Raw JSON Drawer -->
+          <div class="json-drawer">
+            <div class="json-title" onclick="toggleJson()">
+              <span>View Raw JSON Response</span>
+              <span id="json-arrow">▼</span>
+            </div>
+            <div class="json-code" id="json-raw-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Hardcoded cases matching SUST_Preli_Sample_Cases.json for easy sandbox testing
+    const sampleCases = [
+      {
+        id: "SAMPLE-01",
+        label: "Wrong Transfer",
+        complaint: "I sent 5000 taka to a wrong number around 2pm today. The number was supposed to be 01712345678 but I think I typed it wrong. The person isn't responding to my call. Please help me get my money back.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9101", timestamp: "2026-04-14T14:08:22Z", type: "transfer", amount: 5000, counterparty: "+8801719876543", status: "completed" },
+          { transaction_id: "TXN-9087", timestamp: "2026-04-13T18:12:00Z", type: "cash_in", amount: 10000, counterparty: "AGENT-512", status: "completed" }
+        ]
+      },
+      {
+        id: "SAMPLE-02",
+        label: "Established Pattern",
+        complaint: "I sent 2000 to the wrong person by mistake. Please reverse it.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9202", timestamp: "2026-04-14T11:30:00Z", type: "transfer", amount: 2000, counterparty: "+8801812345678", status: "completed" },
+          { transaction_id: "TXN-9180", timestamp: "2026-04-10T09:15:00Z", type: "transfer", amount: 2500, counterparty: "+8801812345678", status: "completed" },
+          { transaction_id: "TXN-9145", timestamp: "2026-04-05T17:45:00Z", type: "transfer", amount: 1500, counterparty: "+8801812345678", status: "completed" }
+        ]
+      },
+      {
+        id: "SAMPLE-03",
+        label: "Failed Payment",
+        complaint: "I tried to pay 1200 taka for my mobile recharge but the app showed failed. But my balance was deducted! Please refund my money.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9301", timestamp: "2026-04-14T16:00:00Z", type: "payment", amount: 1200, counterparty: "MERCHANT-MOBILE-OP", status: "failed" }
+        ]
+      },
+      {
+        id: "SAMPLE-05",
+        label: "Phishing Report",
+        complaint: "Someone called me saying they are from bKash and asked for my OTP. They said my account will be blocked if I don't share it. Is this real? I haven't shared anything yet.",
+        language: "en",
+        channel: "call_center",
+        user_type: "customer",
+        history: []
+      },
+      {
+        id: "SAMPLE-07",
+        label: "Bangla Agent Cash-In",
+        complaint: "আমি আজ সকালে এজেন্টের কাছে ২০০০ টাকা ক্যাশ ইন করেছি কিন্তু আমার ব্যালেন্সে টাকা আসেনি। এজেন্ট বলছে টাকা পাঠিয়েছে কিন্তু আমি দেখছি না।",
+        language: "bn",
+        channel: "call_center",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9701", timestamp: "2026-04-14T09:30:00Z", type: "cash_in", amount: 2000, counterparty: "AGENT-318", status: "pending" }
+        ]
+      },
+      {
+        id: "SAMPLE-08",
+        label: "Ambiguous Brother",
+        complaint: "I sent 1000 to my brother yesterday but he says he didn't get it. Please check.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-9801", timestamp: "2026-04-13T11:20:00Z", type: "transfer", amount: 1000, counterparty: "+8801712001122", status: "completed" },
+          { transaction_id: "TXN-9802", timestamp: "2026-04-13T19:45:00Z", type: "transfer", amount: 1000, counterparty: "+8801812334455", status: "completed" },
+          { transaction_id: "TXN-9803", timestamp: "2026-04-13T20:10:00Z", type: "transfer", amount: 1000, counterparty: "+8801712001122", status: "failed" }
+        ]
+      },
+      {
+        id: "SAMPLE-10",
+        label: "Duplicate Bill Payment",
+        complaint: "I paid my electricity bill 850 taka but it deducted twice from my account. Please check, I only paid once.",
+        language: "en",
+        channel: "in_app_chat",
+        user_type: "customer",
+        history: [
+          { transaction_id: "TXN-10001", timestamp: "2026-04-14T08:15:30Z", type: "payment", amount: 850, counterparty: "BILLER-DESCO", status: "completed" },
+          { transaction_id: "TXN-10002", timestamp: "2026-04-14T08:15:42Z", type: "payment", amount: 850, counterparty: "BILLER-DESCO", status: "completed" }
+        ]
+      }
+    ];
+
+    // Load Buttons
+    const buttonsList = document.getElementById('case-buttons-list');
+    sampleCases.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'case-btn';
+      btn.innerText = `[${c.id}] ${c.label}`;
+      btn.onclick = () => loadCase(c, btn);
+      buttonsList.appendChild(btn);
+    });
+
+    function loadCase(c, btnEl) {
+      // Manage active style
+      document.querySelectorAll('.case-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+
+      document.getElementById('ticket_id').value = c.id;
+      document.getElementById('complaint').value = c.complaint;
+      document.getElementById('language').value = c.language;
+      document.getElementById('channel').value = c.channel;
+      document.getElementById('user_type').value = c.user_type;
+      document.getElementById('transaction_history').value = JSON.stringify(c.history, null, 2);
+    }
+
+    // Default load first case
+    loadCase(sampleCases[0], buttonsList.children[0]);
+
+    // Handle Form Submit
+    document.getElementById('investigator-form').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('btn-submit-text');
+      const originalText = submitBtn.innerText;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>Investigating...';
+
+      const ticket_id = document.getElementById('ticket_id').value;
+      const complaint = document.getElementById('complaint').value;
+      const language = document.getElementById('language').value;
+      const channel = document.getElementById('channel').value;
+      const user_type = document.getElementById('user_type').value;
+      
+      let transaction_history = [];
+      try {
+        const historyText = document.getElementById('transaction_history').value;
+        if (historyText.trim()) {
+          transaction_history = JSON.parse(historyText);
+        }
+      } catch (err) {
+        alert('Invalid JSON in Transaction History!');
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalText;
+        return;
+      }
+
+      const payload = {
+        ticket_id,
+        complaint,
+        language,
+        channel,
+        user_type,
+        transaction_history
+      };
+
+      try {
+        // Send request directly to Vercel Endpoint
+        const response = await fetch('/analyze-ticket', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displayResults(data);
+
+      } catch (error) {
+        alert('Error hitting API: ' + error.message);
+        console.error(error);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalText;
+      }
+    };
+
+    function displayResults(data) {
+      document.getElementById('placeholder-box').style.display = 'none';
+      document.getElementById('results-box').style.display = 'block';
+
+      // 1. Set Verdict Badge
+      const verdictContainer = document.getElementById('verdict-badge-container');
+      const vClass = data.evidence_verdict === 'consistent' ? 'badge-consistent' :
+                     data.evidence_verdict === 'inconsistent' ? 'badge-inconsistent' : 'badge-insufficient';
+      verdictContainer.innerHTML = `<span class="badge ${vClass}">Evidence: ${data.evidence_verdict}</span>`;
+
+      // 2. Set Review Required Badge
+      const reviewContainer = document.getElementById('review-badge-container');
+      if (data.human_review_required) {
+        reviewContainer.innerHTML = `<span class="badge badge-critical">🚨 Escalate for Review</span>`;
+      } else {
+        reviewContainer.innerHTML = `<span class="badge badge-consistent">✅ Resolve Auto</span>`;
+      }
+
+      // 3. Set text values
+      document.getElementById('res-transaction-id').innerText = data.relevant_transaction_id || 'None';
+      document.getElementById('res-department').innerText = data.department.replace(/_/g, ' ');
+      document.getElementById('res-casetype').innerText = data.case_type.replace(/_/g, ' ');
+      
+      const severityEl = document.getElementById('res-severity');
+      severityEl.innerText = data.severity;
+      severityEl.className = 'audit-val ' + (data.severity === 'critical' || data.severity === 'high' ? 'warning' : 'success');
+      
+      document.getElementById('res-confidence').innerText = data.confidence ? `${(data.confidence * 100).toFixed(0)}%` : '80%';
+      document.getElementById('res-summary').innerText = data.agent_summary;
+      document.getElementById('res-action').innerText = data.recommended_next_action;
+      document.getElementById('res-reply').innerText = data.customer_reply;
+
+      // 4. Set Raw JSON
+      document.getElementById('json-raw-content').innerText = JSON.stringify(data, null, 2);
+    }
+
+    // Toggle raw JSON view
+    let jsonVisible = false;
+    function toggleJson() {
+      const el = document.getElementById('json-raw-content');
+      const arrow = document.getElementById('json-arrow');
+      jsonVisible = !jsonVisible;
+      if (jsonVisible) {
+        el.style.display = 'block';
+        arrow.innerText = '▲';
+      } else {
+        el.style.display = 'none';
+        arrow.innerText = '▼';
+      }
+    }
+  </script>
+</body>
+</html>

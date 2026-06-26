@@ -1,0 +1,22 @@
+{
+  "name": "queuestorm-investigator",
+  "version": "1.0.0",
+  "description": "QueueStorm Investigator - ticket investigator backend API for SUST 2026 Codex Community Hackathon",
+  "main": "api/analyze-ticket.ts",
+  "scripts": {
+    "validate": "ts-node scripts/validate_cases.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.43.4",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@vercel/node": "^3.1.20",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
