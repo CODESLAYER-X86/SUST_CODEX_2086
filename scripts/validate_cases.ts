@@ -1,5 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+
+// Inject mock Supabase credentials for local test validation suite
+process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://fpmrjzuzceontfauokgs.supabase.co';
+process.env.SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_placeholder_anon_key';
+process.env.SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'sb_secret_placeholder_service_role_key';
+process.env.SUPABASE_JWKS_URL = process.env.SUPABASE_JWKS_URL || 'https://fpmrjzuzceontfauokgs.supabase.co/auth/v1/jwks';
+
 import handler from '../api/analyze-ticket';
 import { AnalyzeTicketOutputSchema } from '../src/types';
 
@@ -21,32 +28,21 @@ interface TestReport {
  * Mock wrapper for Vercel Serverless function execution.
  */
 async function runHandlerMock(inputPayload: any): Promise<{ status: number; body: any }> {
-  return new Promise((resolve, reject) => {
-    let statusCode = 200;
-
-    const mockReq: any = {
-      method: 'POST',
-      body: inputPayload
-    };
-
-    const mockRes: any = {
-      status(code: number) {
-        statusCode = code;
-        return this;
-      },
-      json(data: any) {
-        resolve({
-          status: statusCode,
-          body: data
-        });
-      }
-    };
-
-    // Execute serverless handler
-    handler(mockReq, mockRes).catch(err => {
-      reject(err);
-    });
+  const request = new Request('https://localhost/api/analyze-ticket', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(inputPayload)
   });
+
+  const response = await handler(request);
+  const body = await response.json();
+
+  return {
+    status: response.status,
+    body
+  };
 }
 
 async function runValidation() {

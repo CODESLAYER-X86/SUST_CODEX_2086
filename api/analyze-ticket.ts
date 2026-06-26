@@ -1,34 +1,47 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import dotenv from 'dotenv';
+import { withSupabase } from '@supabase/server';
 import { AnalyzeTicketInputSchema, validateResponse } from '../src/types';
 import { matchTransaction, runRulesFallback } from '../src/services/rules';
 import { analyzeTicketWithGemini } from '../src/services/gemini';
 import { applySafetyGuardrails } from '../src/services/guardrails';
-import { logTicketAnalysis } from '../src/services/supabase';
 
-dotenv.config();
+export const config = { runtime: 'edge' };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default withSupabase({ auth: 'none' }, async (req, ctx) => {
   // 1. Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
+    return new Response(JSON.stringify({ error: 'Method Not Allowed. Use POST.' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
-  const body = req.body;
-  
-  // 2. Validate input schema
+  // 2. Parse request body
+  let body: any;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Malformed JSON payload' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // 3. Validate input schema
   const validation = AnalyzeTicketInputSchema.safeParse(body);
   if (!validation.success) {
-    return res.status(400).json({
+    return new Response(JSON.stringify({
       error: 'Schema validation error',
       details: validation.error.format()
+    }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 
   const input = validation.data;
 
   try {
-    // 3. Execution Phase: Hybrid Pipeline
+    // 4. Execution Phase: Hybrid Pipeline
     
     // Step A: Run deterministic rules pre-matching
     const preMatchResult = matchTransaction(input);
@@ -45,26 +58,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       finalOutput = validateResponse(safeAnalysis);
     } catch (schemaErr) {
       console.warn('[Validation Warning] Response schema validation failed. Reverting to safe fallback rules engine.', schemaErr);
-      // If the LLM returned invalid enums or fields, fallback immediately
       const fallbackResult = runRulesFallback(input);
       finalOutput = validateResponse(applySafetyGuardrails(fallbackResult, input.language));
     }
 
-    // 4. Supabase DB Logging (Fire-and-forget: do not await so we optimize latency)
-    logTicketAnalysis(input, finalOutput).catch(err => {
-      console.error('Failed to log transaction to Supabase in background:', err);
-    });
+    // 5. Supabase DB Logging via ctx.supabaseAdmin (Fire-and-forget: do not await)
+    try {
+      const logPayload = {
+        ticket_id: input.ticket_id,
+        complaint: input.complaint,
+        language: input.language || 'unknown',
+        channel: input.channel || 'unknown',
+        user_type: input.user_type || 'unknown',
+        relevant_transaction_id: finalOutput.relevant_transaction_id,
+        evidence_verdict: finalOutput.evidence_verdict,
+        case_type: finalOutput.case_type,
+        severity: finalOutput.severity,
+        department: finalOutput.department,
+        agent_summary: finalOutput.agent_summary,
+        recommended_next_action: finalOutput.recommended_next_action,
+        customer_reply: finalOutput.customer_reply,
+        human_review_required: finalOutput.human_review_required,
+        confidence: finalOutput.confidence ?? null,
+        reason_codes: finalOutput.reason_codes ?? [],
+        created_at: new Date().toISOString()
+      };
 
-    // 5. Response output
-    return res.status(200).json(finalOutput);
+      (ctx.supabaseAdmin as any)
+        .from('tickets_audit')
+        .insert([logPayload])
+        .then(({ error }: any) => {
+          if (error) {
+            console.warn('[Supabase Log Warning] SDK insert failed:', error.message);
+          } else {
+            console.info(`[Supabase Log Success] Logged ticket ${input.ticket_id} via SDK.`);
+          }
+        });
+    } catch (err) {
+      console.warn('[Supabase Log Exception] Gracefully caught logging setup error:', err);
+    }
+
+    // 6. Response output
+    return new Response(JSON.stringify(finalOutput), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error(`[Critical Error] Unexpected exception in analyze-ticket:`, error);
     
     // In case of any unexpected core logic errors, output our deterministic fallback.
-    // This guarantees the service never returns a 500 crash, ensuring max reliability points.
     const fallbackResult = runRulesFallback(input);
     const safeFallback = applySafetyGuardrails(fallbackResult, input.language);
-    return res.status(200).json(validateResponse(safeFallback));
+    return new Response(JSON.stringify(validateResponse(safeFallback)), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
-}
+});

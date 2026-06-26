@@ -1,5 +1,7 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { withSupabase } from '@supabase/server';
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
-  return res.status(200).json({ status: 'ok' });
-}
+export const config = { runtime: 'edge' };
+
+export default withSupabase({ auth: 'none' }, async () => {
+  return Response.json({ status: 'ok' });
+});
