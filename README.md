@@ -26,6 +26,20 @@ This service is built using **Option A: Native Vercel Serverless Functions** in 
 
 ---
 
+## 🤖 Models Used
+
+1. **Google AI Studio (Gemini 2.5 Flash / 1.5 Flash)**
+   - **Where it runs**: Hosted on Google's global cloud infrastructure.
+   - **Why chosen**: Chosen for its excellent multilingual capability (highly natural Bengali text generation), strict JSON Schema generation mode compatibility, and zero-latency performance profile.
+2. **Groq Cloud (Llama 3.1 70B)**
+   - **Where it runs**: Hosted on Groq's high-speed inference cloud.
+   - **Why chosen**: Served as our primary high-speed reasoning model due to its ultra-fast ~300ms token completion latency and exceptional analytical decision-making on complex MFS rules.
+3. **Deterministic Rules Engine (Local Fallback)**
+   - **Where it runs**: Runs directly on Vercel's CPU/Serverless nodes in TypeScript.
+   - **Why chosen**: Zero API key dependencies, instant 1ms execution, and handles strict matching rules natively. If the cloud AI models hit a rate limit (HTTP 429) or go offline, the engine falls back to this local rules compiler, keeping the service at 100% availability.
+
+---
+
 ## ⚙️ Environment Variables
 Create a `.env` file in the root directory (or configure them in your Vercel Dashboard):
 
