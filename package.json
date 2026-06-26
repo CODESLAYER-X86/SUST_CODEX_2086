@@ -5,7 +5,7 @@
   "main": "api/analyze-ticket.ts",
   "scripts": {
     "validate": "ts-node scripts/validate_cases.ts",
-    "build": "tsc"
+    "build": "echo 'Vercel handles TypeScript compilation for api/ functions automatically'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
