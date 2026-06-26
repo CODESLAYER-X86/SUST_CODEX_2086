@@ -452,13 +452,7 @@
       </div>
       <div class="badge-carnival">SUST CSE CARNIVAL 2026</div>
     </header>
-
-    <div class="case-selector-container">
-      <div class="case-selector-title">Load Worked Case Pack (Local Samples)</div>
-      <div class="case-buttons" id="case-buttons-list">
-        <!-- Buttons added dynamically by script -->
-      </div>
-    </div>
+    <!-- Playground Dashboard -->
 
     <div class="dashboard-grid">
       <!-- Input Form Panel -->
@@ -712,31 +706,8 @@
       }
     ];
 
-    // Load Buttons
-    const buttonsList = document.getElementById('case-buttons-list');
-    sampleCases.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = 'case-btn';
-      btn.innerText = `[${c.id}] ${c.label}`;
-      btn.onclick = () => loadCase(c, btn);
-      buttonsList.appendChild(btn);
-    });
-
-    function loadCase(c, btnEl) {
-      // Manage active style
-      document.querySelectorAll('.case-btn').forEach(b => b.classList.remove('active'));
-      btnEl.classList.add('active');
-
-      document.getElementById('ticket_id').value = c.id;
-      document.getElementById('complaint').value = c.complaint;
-      document.getElementById('language').value = c.language;
-      document.getElementById('channel').value = c.channel;
-      document.getElementById('user_type').value = c.user_type;
-      document.getElementById('transaction_history').value = JSON.stringify(c.history, null, 2);
-    }
-
-    // Default load first case
-    loadCase(sampleCases[0], buttonsList.children[0]);
+    // Initialize default empty transaction history
+    document.getElementById('transaction_history').value = "[]";
 
     // Handle Form Submit
     document.getElementById('investigator-form').onsubmit = async (e) => {
