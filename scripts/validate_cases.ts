@@ -1,5 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Inject mock Supabase credentials for local test validation suite
 process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://fpmrjzuzceontfauokgs.supabase.co';

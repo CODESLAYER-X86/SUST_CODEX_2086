@@ -1,9 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
 import { AnalyzeTicketInput, AnalyzeTicketOutput } from '../types';
 import { runRulesFallback, detectLanguage } from './rules';
 
-dotenv.config();
+
 
 const geminiKey = process.env.GEMINI_API_KEY;
 const groqKey = process.env.GROQ_API_KEY;
