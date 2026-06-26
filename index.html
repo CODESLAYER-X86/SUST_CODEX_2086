@@ -581,7 +581,6 @@
           </div>
 
           <button type="submit" class="btn-submit" id="btn-submit-text">Run Investigation</button>
-          <button type="button" class="btn-secondary" id="btn-generate-scenario">✨ Generate Mock Scenario</button>
         </form>
       </div>
 
@@ -794,99 +793,7 @@
     // Initialize default empty transaction history
     document.getElementById('transaction_history').value = "[]";
 
-    const scenarioTemplates = [
-      {
-        label: "Wrong Transfer (Consistent)",
-        language: "en",
-        channel: "in_app_chat",
-        user_type: "customer",
-        generate: () => {
-          const amt = [1000, 2500, 5000, 8000][Math.floor(Math.random() * 4)];
-          const phone = "+8801" + Math.floor(100000000 + Math.random() * 900000000);
-          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
-          return {
-            complaint: `I sent ${amt} BDT to a wrong number yesterday. It was supposed to go to my mother but I made a mistake typing the digits. The recipient is unresponsive. Transaction ID is ${txn}.`,
-            history: [
-              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 20).toISOString(), type: "transfer", amount: amt, counterparty: phone, status: "completed" },
-              { transaction_id: "TXN-" + Math.floor(1000 + Math.random() * 9000), timestamp: new Date(Date.now() - 3600000 * 50).toISOString(), type: "cash_in", amount: amt * 2, counterparty: "AGENT-911", status: "completed" }
-            ]
-          };
-        }
-      },
-      {
-        label: "Failed Payment (Consistent)",
-        language: "en",
-        channel: "in_app_chat",
-        user_type: "customer",
-        generate: () => {
-          const amt = [500, 1200, 3000][Math.floor(Math.random() * 3)];
-          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
-          return {
-            complaint: `I tried to recharge my mobile with ${amt} taka, but the transaction failed. However, my wallet balance was deducted. Please refund my money.`,
-            history: [
-              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), type: "payment", amount: amt, counterparty: "MERCHANT-MOBILE-RECHARGE", status: "failed" }
-            ]
-          };
-        }
-      },
-      {
-        label: "Phishing Attempt (Safety Check)",
-        language: "en",
-        channel: "call_center",
-        user_type: "customer",
-        generate: () => {
-          const phone = "+8801" + Math.floor(100000000 + Math.random() * 900000000);
-          return {
-            complaint: `Someone called me from ${phone} claiming to be from support and asked for my PIN and OTP to unblock my account. I did not share it yet, but is it safe?`,
-            history: []
-          };
-        }
-      },
-      {
-        label: "Bangla Agent Cash-In (Consistent)",
-        language: "bn",
-        channel: "call_center",
-        user_type: "customer",
-        generate: () => {
-          const amt = [1000, 2000, 5000][Math.floor(Math.random() * 3)];
-          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
-          return {
-            complaint: `আমি আজ সকালে এজেন্টের কাছে ${amt} টাকা ক্যাশ ইন করেছি কিন্তু আমার অ্যাকাউন্টে ব্যালেন্স যোগ হয়নি। এজেন্টের নাম জানি না, ট্রানজেকশন আইডি ${txn}।`,
-            history: [
-              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 4).toISOString(), type: "cash_in", amount: amt, counterparty: "AGENT-" + Math.floor(100 + Math.random() * 900), status: "pending" }
-            ]
-          };
-        }
-      },
-      {
-        label: "Merchant Settlement Delay",
-        language: "en",
-        channel: "merchant_portal",
-        user_type: "merchant",
-        generate: () => {
-          const amt = [12000, 15000, 35000][Math.floor(Math.random() * 3)];
-          const txn = "TXN-" + Math.floor(1000 + Math.random() * 9000);
-          return {
-            complaint: `Yesterday's sales settlement of ${amt} BDT is still pending. Settlement should have completed by 11 AM today. Please resolve this.`,
-            history: [
-              { transaction_id: txn, timestamp: new Date(Date.now() - 3600000 * 18).toISOString(), type: "settlement", amount: amt, counterparty: "MERCHANT-SELF", status: "pending" }
-            ]
-          };
-        }
-      }
-    ];
 
-    document.getElementById('btn-generate-scenario').onclick = () => {
-      const template = scenarioTemplates[Math.floor(Math.random() * scenarioTemplates.length)];
-      const scenario = template.generate();
-      
-      document.getElementById('ticket_id').value = "TKT-" + Math.floor(1000 + Math.random() * 9000);
-      document.getElementById('complaint').value = scenario.complaint;
-      document.getElementById('language').value = template.language;
-      document.getElementById('channel').value = template.channel;
-      document.getElementById('user_type').value = template.user_type;
-      document.getElementById('transaction_history').value = JSON.stringify(scenario.history, null, 2);
-    };
 
     // Handle Form Submit
     document.getElementById('investigator-form').onsubmit = async (e) => {
